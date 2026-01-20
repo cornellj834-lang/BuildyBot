@@ -1,15 +1,26 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Baby, Hammer, Settings, Trash2, X, Trophy } from 'lucide-react';
+import { Baby, Hammer, Settings, Trash2, X, Trophy, Cloud } from 'lucide-react'; // Added Cloud icon
 import { useCoins } from '../context/CoinContext';
 import { useSound } from '../context/SoundContext';
 import BuildersGallery from './BuildersGallery';
-import audioEngine from '../utils/audioEngine'; // Import engine to init audio context on first click
+import audioEngine from '../utils/audioEngine';
+import LevelProgressBar from './LevelProgressBar';
+import StreakFlame from './StreakFlame';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth'; // Auth
+import { auth } from '../services/firebase';
 
 export default function ProfileSelection({ onSelectProfile }) {
-    const { coins, resetCoins, setCoinsManually } = useCoins();
+    const { coins, resetCoins, setCoinsManually, stats, user } = useCoins();
     const { playSound } = useSound();
     const [showAdmin, setShowAdmin] = useState(false);
+
+    // Auth State
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [authError, setAuthError] = useState('');
+    const [isLoginView, setIsLoginView] = useState(true);
+
     const [parkerInput, setParkerInput] = useState('');
     const [barrettInput, setBarrettInput] = useState('');
     const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -93,6 +104,12 @@ export default function ProfileSelection({ onSelectProfile }) {
                     </motion.div>
                     <span className="text-4xl md:text-5xl font-bold drop-shadow-md">Parker</span>
                     <span className="text-xl opacity-90 font-medium bg-white/20 px-4 py-1 rounded-full">(Age 2)</span>
+
+                    {/* Stats */}
+                    <div className="w-full mt-2 flex items-center gap-2">
+                        <StreakFlame streak={stats?.parker?.streak || 0} />
+                        <LevelProgressBar xp={stats?.parker?.xp || 0} level={stats?.parker?.level || 1} />
+                    </div>
                 </motion.button>
 
                 {/* Barrett (Age 7) - Blue Lego Brick */}
@@ -119,6 +136,12 @@ export default function ProfileSelection({ onSelectProfile }) {
                     </motion.div>
                     <span className="text-4xl md:text-5xl font-bold drop-shadow-md">Barrett</span>
                     <span className="text-xl opacity-90 font-medium bg-white/20 px-4 py-1 rounded-full">(Age 7)</span>
+
+                    {/* Stats */}
+                    <div className="w-full mt-2 flex items-center gap-2">
+                        <StreakFlame streak={stats?.barrett?.streak || 0} />
+                        <LevelProgressBar xp={stats?.barrett?.xp || 0} level={stats?.barrett?.level || 1} />
+                    </div>
                 </motion.button>
             </motion.div>
 
@@ -221,6 +244,70 @@ export default function ProfileSelection({ onSelectProfile }) {
                             </button>
 
                             <h2 className="text-2xl font-bold text-lego-black mb-6">Parent Controls</h2>
+
+                            {/* Cloud Sync Section */}
+                            <div className="bg-purple-50 p-4 rounded-xl mb-6 text-left">
+                                <div className="flex items-center gap-2 mb-2 text-purple-800 font-bold">
+                                    <Cloud size={20} />
+                                    <h3>Cloud Sync {user ? '(Active)' : '(Inactive)'}</h3>
+                                </div>
+
+                                {user ? (
+                                    <div className="text-sm">
+                                        <p className="text-green-600 font-bold mb-2">Logged in as {user.email}</p>
+                                        <button
+                                            onClick={() => signOut(auth)}
+                                            className="text-red-500 underline text-xs"
+                                        >
+                                            Sign Out
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        <p className="text-xs text-gray-500 mb-2">Sign in to sync progress across devices.</p>
+                                        <input
+                                            type="email"
+                                            placeholder="Email"
+                                            className="w-full px-3 py-2 border rounded text-sm"
+                                            value={email}
+                                            onChange={e => setEmail(e.target.value)}
+                                        />
+                                        <input
+                                            type="password"
+                                            placeholder="Password"
+                                            className="w-full px-3 py-2 border rounded text-sm"
+                                            value={password}
+                                            onChange={e => setPassword(e.target.value)}
+                                        />
+                                        {authError && <p className="text-red-500 text-xs">{authError}</p>}
+
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={async () => {
+                                                    try {
+                                                        await signInWithEmailAndPassword(auth, email, password);
+                                                        setAuthError('');
+                                                    } catch (err) { setAuthError(err.message); }
+                                                }}
+                                                className="flex-1 bg-purple-600 text-white py-2 rounded text-sm font-bold"
+                                            >
+                                                Login
+                                            </button>
+                                            <button
+                                                onClick={async () => {
+                                                    try {
+                                                        await createUserWithEmailAndPassword(auth, email, password);
+                                                        setAuthError('');
+                                                    } catch (err) { setAuthError(err.message); }
+                                                }}
+                                                className="flex-1 bg-purple-200 text-purple-800 py-2 rounded text-sm font-bold"
+                                            >
+                                                Register
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
 
                             <div className="space-y-4">
                                 {/* Manual Coin Setting */}
