@@ -14,7 +14,10 @@ const catSpace = catVehicle;
 const catFantasy = catBuilding;
 const catGeneric = catBuilding;
 
-import { ArrowLeft, RefreshCw, Volume2, CheckCircle, Home, Gift, Star, Trophy, Heart, Coins, ShoppingBag } from 'lucide-react';
+import { useVoiceCompanion } from '../hooks/useVoiceCompanion';
+import micIcon from '../assets/mic_icon.png';
+
+import { ArrowLeft, RefreshCw, Volume2, CheckCircle, Home, Gift, Star, Trophy, Heart, Coins, ShoppingBag, Mic } from 'lucide-react';
 
 const CATEGORY_IMAGES = {
     vehicle: catVehicle,
@@ -41,6 +44,9 @@ export default function ChallengeScreen({ ageGroup, onBack }) {
     const [rewardItem, setRewardItem] = useState(null);
     const [isStoreOpen, setIsStoreOpen] = useState(false);
     const [voices, setVoices] = useState([]);
+
+    // Voice Companion Hook
+    const { isListening, isThinking, isSpeaking: isAiSpeaking, transcript, startListening } = useVoiceCompanion(currentPrompt?.text);
 
     useEffect(() => {
         const loadVoices = () => {
@@ -245,36 +251,74 @@ export default function ChallengeScreen({ ageGroup, onBack }) {
                 </AnimatePresence>
 
                 {/* Action Buttons */}
-                <div className="flex flex-col md:flex-row gap-8 w-full max-w-2xl justify-center z-10">
 
+                {/* Voice Interaction Zone */}
+                <div className="flex flex-col items-center gap-4 mt-8 z-10 w-full">
+                    {/* Transcript Bubble */}
+                    {(transcript || isThinking) && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="bg-white/90 backdrop-blur px-6 py-3 rounded-2xl shadow-lg max-w-lg border-2 border-lego-blue"
+                        >
+                            <p className="text-xl text-lego-black font-semibold">
+                                {isThinking ? "Thinking..." : `"${transcript}"`}
+                            </p>
+                        </motion.div>
+                    )}
+
+                    <div className="flex flex-col md:flex-row gap-8 w-full max-w-2xl justify-center">
+                        <motion.button
+                            variants={{
+                                hidden: { scale: 0, opacity: 0 },
+                                visible: { scale: 1, opacity: 1 }
+                            }}
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => { playSound('click'); startListening(); }}
+                            disabled={isListening || isThinking || isAiSpeaking}
+                            className={`
+                                relative flex items-center justify-center w-24 h-24 rounded-full shadow-2xl border-4 border-white
+                                ${isListening ? 'bg-red-500 animate-pulse' : 'bg-lego-blue btn-lego-3d'}
+                                ${isThinking ? 'bg-purple-500' : ''}
+                            `}
+                        >
+                            {/* Ripple Effect when speaking */}
+                            {isAiSpeaking && (
+                                <div className="absolute inset-0 rounded-full border-4 border-lego-blue animate-ping" />
+                            )}
+
+                            <img src={micIcon} alt="Mic" className={`w-12 h-12 object-contain ${isListening ? 'animate-bounce' : ''}`} />
+                        </motion.button>
+
+                        {/* Status Label */}
+                        <div className="absolute -bottom-10 whitespace-nowrap bg-white/80 px-4 py-1 rounded-full text-sm font-bold text-gray-600">
+                            {isListening ? "Listening..." : isThinking ? "Buildy is thinking..." : isAiSpeaking ? "Buildy is talking!" : "Talk to Buildy!"}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Legacy Action Buttons (Bottom) */}
+                <div className="flex flex-col md:flex-row gap-8 w-full max-w-2xl justify-center mt-12 z-10 opacity-80 hover:opacity-100 transition-opacity">
                     <motion.button
-                        variants={{
-                            hidden: { x: -50, opacity: 0 },
-                            visible: { x: 0, opacity: 1 }
-                        }}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={handleSpeak}
-                        className="flex items-center justify-center gap-3 px-8 py-6 text-2xl btn-lego-3d btn-lego-3d-blue flex-1"
+                        className="flex items-center justify-center gap-2 px-6 py-3 text-lg bg-white/50 rounded-xl hover:bg-white transition-colors"
                     >
-                        <Volume2 size={32} />
-                        {isSpeaking ? 'Stop' : 'Read'}
+                        <Volume2 size={24} />
+                        Read Again
                     </motion.button>
 
                     <motion.button
-                        variants={{
-                            hidden: { x: 50, opacity: 0 },
-                            visible: { x: 0, opacity: 1 }
-                        }}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => { playSound('click'); generateNewPrompt(); }}
-                        className="flex items-center justify-center gap-3 px-8 py-6 text-2xl btn-lego-3d btn-lego-3d-orange flex-1"
+                        className="flex items-center justify-center gap-2 px-6 py-3 text-lg bg-white/50 rounded-xl hover:bg-white transition-colors"
                     >
-                        <RefreshCw size={32} />
+                        <RefreshCw size={24} />
                         Skip
                     </motion.button>
-
                 </div>
 
                 <div className="mt-12 z-10">
@@ -293,10 +337,10 @@ export default function ChallengeScreen({ ageGroup, onBack }) {
                     </motion.button>
                 </div>
 
-            </motion.main>
+            </motion.main >
 
             {/* Reward Modal */}
-            <AnimatePresence>
+            < AnimatePresence >
                 {showReward && (
                     <motion.div
                         initial={{ opacity: 0 }}
@@ -332,8 +376,9 @@ export default function ChallengeScreen({ ageGroup, onBack }) {
                             </button>
                         </motion.div>
                     </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
+                )
+                }
+            </AnimatePresence >
+        </div >
     );
 }
